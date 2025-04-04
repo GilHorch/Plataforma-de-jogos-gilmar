@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Histórico do Jogo</title>
+</head>
+<body>
+    <h2>Histórico de Partidas</h2>
+    <table border="1" id="tabelaHistorico">
+        <tr>
+            <th>Data</th>
+            <th>Resultado</th>
+            <th>Tempo Restante</th>
+        </tr>
+    </table>
+    <p><a href="/jogo.html">Voltar ao Jogo</a></p>
+    <p><a href="/logout">Sair</a></p>
+
+    <script>
+        fetch('/meu-historico')
+            .then(res => res.json())
+            .then(historico => {
+                const tabela = document.getElementById("tabelaHistorico");
+                historico.forEach(entry => {
+                    const row = tabela.insertRow();
+                    row.insertCell(0).textContent = new Date(entry.data).toLocaleString();
+                    row.insertCell(1).textContent = entry.resultado;
+                    row.insertCell(2).textContent = entry.tempoRestante + "s";
+                });
+            })
+            .catch(() => {
+                alert("Erro ao carregar histórico.");
+            });
+    </script>
+</body>
+</html>

@@ -48,6 +48,28 @@ app.post('/login', (req, res) => {
     res.send('Usuário ou senha inválidos.');
 });
 
+
+// Rota de cadastro de novo usuário
+app.post('/cadastro', (req, res) => {
+    const { usuario, senha } = req.body;
+    const users = loadUsers();
+
+    if (users[usuario]) {
+        return res.send('Usuário já existe. Tente outro nome.');
+    }
+
+    users[usuario] = senha;
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+    req.session.usuario = usuario;
+    res.redirect('/jogo.html');
+});
+
+
+
+
+
+
+
 // Rota de logout
 app.get('/logout', (req, res) => {
     req.session.destroy(() => {
@@ -87,4 +109,18 @@ app.post('/historico', (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`Servidor rodando: http://localhost:${PORT}`);
+});
+
+
+// Rota protegida para exibir o histórico do usuário
+app.get('/meu-historico', requireLogin, (req, res) => {
+    const usuario = req.session.usuario;
+    const historicoPath = path.join(__dirname, 'historico', `${usuario}.json`);
+
+    if (fs.existsSync(historicoPath)) {
+        const historico = JSON.parse(fs.readFileSync(historicoPath));
+        return res.json(historico);
+    }
+
+    res.json([]);
 });
