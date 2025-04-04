@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Memória</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .game-board { display: grid; grid-template-columns: repeat(4, 100px); gap: 10px; justify-content: center; }
+        .card { width: 100px; height: 100px; background: gray; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; }
+        .card img { width: 100%; height: 100%; position: absolute; }
+        .hidden { visibility: hidden; }
+    </style>
+</head>
+<body>
+    <h1>Jogo da Memória</h1>
+    <p>Tempo restante: <span id="timer">60</span> segundos</p>
+    <div class="game-board" id="gameBoard"></div>
+    <p><a href="/logout">Sair</a></p>
+
+    <script>
+        // Lista fixa de imagens com IDs únicos
+        const images = [
+            { id: 'img1', src: 'img1.jpg' },
+            { id: 'img2', src: 'img2.jpg' },
+            { id: 'img3', src: 'img3.jpg' },
+            { id: 'img4', src: 'img4.jpg' },
+            { id: 'img5', src: 'img5.jpg' },
+            { id: 'img6', src: 'img6.jpg' },
+            { id: 'img7', src: 'img7.jpg' },
+            { id: 'img8', src: 'img8.jpg' }
+        ];
+
+        let cards = shuffle([...images, ...images]);
+        let selectedCards = [];
+        let matchedCards = [];
+        let timeLeft = 60;
+        let timerInterval;
+
+        function shuffle(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        function createBoard() {
+            const board = document.getElementById("gameBoard");
+            board.innerHTML = "";
+
+            cards.forEach((imgObj, index) => {
+                const card = document.createElement("div");
+                card.classList.add("card");
+                card.dataset.id = imgObj.id;
+                card.dataset.index = index;
+
+                const backImage = document.createElement("img");
+                backImage.src = "back.jpg";
+                backImage.classList.add("back");
+
+                const frontImage = document.createElement("img");
+                frontImage.src = imgObj.src;
+                frontImage.classList.add("front");
+                frontImage.style.display = "none";
+
+                card.appendChild(backImage);
+                card.appendChild(frontImage);
+                card.addEventListener("click", flipCard);
+                board.appendChild(card);
+            });
+
+            startTimer();
+        }
+
+        function flipCard() {
+            if (selectedCards.length < 2 && !selectedCards.includes(this)) {
+                this.querySelector(".back").style.display = "none";
+                this.querySelector(".front").style.display = "block";
+                selectedCards.push(this);
+            }
+
+            if (selectedCards.length === 2) {
+                setTimeout(checkMatch, 500);
+            }
+        }
+
+        function checkMatch() {
+            const [card1, card2] = selectedCards;
+            if (card1.dataset.id === card2.dataset.id) {
+                card1.classList.add("hidden");
+                card2.classList.add("hidden");
+                matchedCards.push(card1.dataset.id);
+                if (matchedCards.length === images.length) {
+                    clearInterval(timerInterval);
+                    alert("Parabéns! Você encontrou todos os pares.");
+                    salvarHistorico();
+                }
+            } else {
+                card1.querySelector(".back").style.display = "block";
+                card1.querySelector(".front").style.display = "none";
+                card2.querySelector(".back").style.display = "block";
+                card2.querySelector(".front").style.display = "none";
+            }
+            selectedCards = [];
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    document.getElementById("timer").textContent = timeLeft;
+                } else {
+                    clearInterval(timerInterval);
+                    alert("Tempo esgotado! Tente novamente.");
+                    salvarHistorico(false);
+                    location.reload();
+                }
+            }, 1000);
+        }
+
+        function salvarHistorico(vitoria = true) {
+            fetch('/historico', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    tempoRestante: timeLeft,
+                    resultado: vitoria ? 'Vitória' : 'Derrota'
+                })
+            })
+            .then(res => res.text())
+            .then(msg => console.log(msg));
+        }
+
+        createBoard();
+    </script>
+</body>
+</html>
